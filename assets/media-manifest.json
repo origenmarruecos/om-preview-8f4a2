@@ -4,29 +4,13 @@
     1000
   ],
   "products_total": 38,
-  "products_with_image": 17,
+  "products_with_image": 33,
   "missing": [
     "alcampo-belmonte-gourmet",
-    "alcampo-belmonte-23",
-    "alcampo-belmonte-gildas",
-    "alcampo-belmonte-tapitas",
-    "carrefour-caracol",
-    "carrefour-tapita",
-    "carrefour-ramiflor",
     "carrefour-elmenu",
-    "alcampo-aceite",
-    "alcampo-noras",
-    "alcampo-fresones",
-    "alcampo-calvo-girasol",
-    "alcampo-calvo-oliva-baja-sal",
-    "alcampo-calvo-sardinillas-baja-sal",
     "alcampo-pescadona-pulpo",
-    "alcampo-belmonte-banderillas",
-    "alcampo-vanelli-anchoa",
-    "alcampo-perejil-bio",
     "alcampo-eneldo-bio",
-    "alcampo-estragon-bio",
-    "aldi-aguacate"
+    "alcampo-estragon-bio"
   ],
   "logos_ok": 5
 }
