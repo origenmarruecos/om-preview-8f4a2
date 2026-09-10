@@ -8,7 +8,7 @@ from pathlib import Path
 from urllib.parse import quote_plus, urljoin, urlparse
 
 import requests
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageChops
 
 ROOT = Path(__file__).resolve().parents[1]
 PRODUCT_DIR = ROOT / "assets" / "products"
@@ -45,9 +45,6 @@ SOURCE_OVERRIDES = {
     "carrefour-tapita": "https://radarsuper.com/carrefour/p/tapita-marinera-mediterranea-belmonte-gourmet-300-g-carrefour-carrefour",
 }
 
-# Imágenes revisadas manualmente contra la ficha. Para El Menú, Carrefour denomina
-# la referencia "62 g", pero su propia ficha declara contenido neto 50 g; usamos la
-# presentación retail actual de 50 g de la misma línea.
 DIRECT_IMAGE_OVERRIDES = {
     "alcampo-belmonte-23": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1d4445a4-4454-417a-bdc9-0ff361ad1dc4/500x500.jpg",
     "alcampo-belmonte-gourmet": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c93af348-6765-40db-9b08-1d2df9277cd0/500x500.jpg",
@@ -67,15 +64,13 @@ DIRECT_IMAGE_OVERRIDES = {
     "aldi-aguacate": "https://archivana.com/pics/09/8c/098c6129854123bb2a1090cd1c07fef9b7686c03.jpg",
 }
 
-# Si la tienda no entrega el HTML de la ficha, estos candidatos son sólo último
-# recurso tras intentar extraer la imagen exacta del buscador SSR.
 FALLBACK_IMAGE_OVERRIDES = {
     "alcampo-pescadona-pulpo": "https://claire.global/static/media/catalog/products/1822-pata-de-pulpo-cocido-68-patas-congelado-f6195547537b40f68e61baa827c4a4b2-520x520.jpg",
     "alcampo-estragon-bio": "https://d3nqciqdbtzkc.cloudfront.net/articulos/articulos-105306.jpg",
 }
 
 CANVAS = 1000
-MAX_CONTENT = 850
+TARGET = 880
 BACKGROUND = (255, 255, 255, 255)
 LAST_REQUEST = {}
 
@@ -134,29 +129,10 @@ def meta_images(html, base):
     for pat in patterns:
         for u in re.findall(pat, html, flags=re.I):
             out.append(urljoin(base, u.replace("&amp;", "&")))
-
-    for block in re.findall(r'<script[^>]+type=["\']application/ld\+json["\'][^>]*>(.*?)</script>', html, flags=re.I | re.S):
-        try:
-            obj = json.loads(block.strip())
-        except Exception:
-            continue
-        stack = obj if isinstance(obj, list) else [obj]
-        for item in stack:
-            if not isinstance(item, dict):
-                continue
-            image = item.get("image")
-            if isinstance(image, str):
-                out.append(urljoin(base, image))
-            elif isinstance(image, list):
-                out.extend(urljoin(base, x) for x in image if isinstance(x, str))
-            elif isinstance(image, dict) and isinstance(image.get("url"), str):
-                out.append(urljoin(base, image["url"]))
-
     for tag in re.findall(r'<img\b[^>]*>', html, flags=re.I):
         m = re.search(r'(?:src|data-src|data-original)=["\']([^"\']+)', tag, flags=re.I)
         if m:
             out.append(urljoin(base, m.group(1).replace("&amp;", "&")))
-
     seen = set()
     return [u for u in out if u and not u.startswith("data:") and not (u in seen or seen.add(u))]
 
@@ -221,7 +197,6 @@ def alcampo_search_candidates(product):
     except Exception as exc:
         print(f"WARN search Alcampo {product['id']}: {exc}")
         return []
-
     matches = []
     for key, entity in entities.items():
         if not isinstance(entity, dict):
@@ -230,11 +205,7 @@ def alcampo_search_candidates(product):
         if product_id not in rid and product_id not in str(key):
             continue
         collect_image_strings(entity, matches)
-    # Preferimos 1120/500 frente a miniaturas.
-    matches = sorted(set(matches), key=lambda u: ("1120x1120" in u, "500x500" in u, "300x300" in u), reverse=True)
-    if matches:
-        print(f"  SEARCH exact image candidates: {matches[:3]}")
-    return matches
+    return sorted(set(matches), key=lambda u: ("1120x1120" in u, "500x500" in u, "300x300" in u), reverse=True)
 
 
 def off_candidates(product):
@@ -288,19 +259,54 @@ def image_bytes(url):
     return r.content
 
 
+def content_bbox(im):
+    """Detecta el contenido real ignorando el fondo blanco/casi blanco."""
+    rgba = im.convert("RGBA")
+    alpha = rgba.getchannel("A")
+    if alpha.getextrema()[0] < 250:
+        bbox = alpha.point(lambda p: 255 if p > 10 else 0).getbbox()
+        if bbox and bbox != (0, 0, rgba.width, rgba.height):
+            return bbox
+
+    rgb = rgba.convert("RGB")
+    white = Image.new("RGB", rgb.size, (255, 255, 255))
+    diff = ImageChops.difference(rgb, white).convert("L")
+    mask = diff.point(lambda p: 255 if p > 12 else 0)
+    bbox = mask.getbbox()
+    if not bbox:
+        return (0, 0, rgba.width, rgba.height)
+
+    # Un pequeño colchón evita afeitar sombras y bordes del envase.
+    x0, y0, x1, y1 = bbox
+    pad = max(4, round(max(x1-x0, y1-y0) * 0.035))
+    return (max(0, x0-pad), max(0, y0-pad), min(rgba.width, x1+pad), min(rgba.height, y1+pad))
+
+
 def normalize_product_image(raw, dst):
-    with Image.open(io.BytesIO(raw)) as im:
-        im = ImageOps.exif_transpose(im).convert("RGBA")
-        if im.width < 140 or im.height < 140:
+    with Image.open(io.BytesIO(raw)) as src:
+        im = ImageOps.exif_transpose(src).convert("RGBA")
+        if im.width < 80 or im.height < 80:
             raise ValueError("imagen demasiado pequeña")
-        alpha = im.getchannel("A")
-        bbox = alpha.getbbox()
-        if bbox:
-            im = im.crop(bbox)
-        im.thumbnail((MAX_CONTENT, MAX_CONTENT), Image.Resampling.LANCZOS)
+        im = im.crop(content_bbox(im))
+        if im.width < 20 or im.height < 20:
+            raise ValueError("contenido visual inválido")
+
+        scale = min(TARGET / im.width, TARGET / im.height)
+        new_w = max(1, round(im.width * scale))
+        new_h = max(1, round(im.height * scale))
+        im = im.resize((new_w, new_h), Image.Resampling.LANCZOS)
+
         canvas = Image.new("RGBA", (CANVAS, CANVAS), BACKGROUND)
-        canvas.alpha_composite(im, ((CANVAS - im.width)//2, (CANVAS - im.height)//2))
-        canvas.convert("RGB").save(dst, "WEBP", quality=88, method=6)
+        x = (CANVAS - new_w) // 2
+        y = (CANVAS - new_h) // 2
+        canvas.alpha_composite(im, (x, y))
+        canvas.convert("RGB").save(dst, "WEBP", quality=90, method=6)
+
+
+def renormalize_cached(dst):
+    """Reencuadra los WebP ya descargados sin tener que volver a pedirlos a la tienda."""
+    raw = dst.read_bytes()
+    normalize_product_image(raw, dst)
 
 
 def try_candidate(url, dst):
@@ -314,7 +320,11 @@ def try_candidate(url, dst):
 def choose_product_image(product):
     dst = PRODUCT_DIR / f"{product['id']}.webp"
     if dst.exists() and dst.stat().st_size > 3000:
-        return "local-cache"
+        try:
+            renormalize_cached(dst)
+            return "local-cache-reframed"
+        except Exception as exc:
+            print(f"WARN reframe {product['id']}: {exc}")
 
     direct = DIRECT_IMAGE_OVERRIDES.get(product["id"])
     if direct:
@@ -331,7 +341,6 @@ def choose_product_image(product):
     if fallback:
         candidates.append(fallback)
 
-    errors = []
     seen = set()
     for u in candidates[:20]:
         if u in seen:
@@ -341,16 +350,13 @@ def choose_product_image(product):
             if try_candidate(u, dst):
                 return u
         except Exception as exc:
-            errors.append(str(exc))
-    if errors:
-        print(f"WARN image {product['id']}: {errors[-1]}")
+            print(f"WARN candidate {product['id']}: {exc}")
     return None
 
 
 def sync_logos():
     ok = 0
     expected = {name: ext for name, (_, ext) in LOGOS.items()}
-    # Borra variantes antiguas del logo si cambia el formato.
     for name, ext in expected.items():
         for old_ext in ("svg", "png", "jpg", "webp"):
             old = LOGO_DIR / f"{name}.{old_ext}"
@@ -360,7 +366,6 @@ def sync_logos():
         dst = LOGO_DIR / f"{name}.{ext}"
         if dst.exists() and dst.stat().st_size > 300:
             ok += 1
-            print(f"LOGO CACHE {name}")
             continue
         try:
             r = fetch(url, timeout=25)
@@ -375,7 +380,6 @@ def sync_logos():
                     im.thumbnail((1200, 800), Image.Resampling.LANCZOS)
                     im.save(dst, "PNG", optimize=True)
             ok += 1
-            print(f"LOGO OK {name}")
         except Exception as exc:
             print(f"LOGO FAIL {name}: {exc}")
     return ok
@@ -383,7 +387,6 @@ def sync_logos():
 
 def main():
     products = load_products()
-    print(f"Productos encontrados: {len(products)}")
     logo_ok = sync_logos()
     ok = 0
     missing = []
@@ -399,6 +402,7 @@ def main():
 
     manifest = {
         "canvas": [CANVAS, CANVAS],
+        "visual_target": TARGET,
         "products_total": len(products),
         "products_with_image": ok,
         "missing": missing,
