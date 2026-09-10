@@ -4,13 +4,7 @@
     1000
   ],
   "products_total": 38,
-  "products_with_image": 33,
-  "missing": [
-    "alcampo-belmonte-gourmet",
-    "carrefour-elmenu",
-    "alcampo-pescadona-pulpo",
-    "alcampo-eneldo-bio",
-    "alcampo-estragon-bio"
-  ],
-  "logos_ok": 5
+  "products_with_image": 38,
+  "missing": [],
+  "logos_ok": 6
 }
