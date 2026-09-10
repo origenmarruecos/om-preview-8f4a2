@@ -18,7 +18,7 @@ LOGO_DIR.mkdir(parents=True, exist_ok=True)
 
 SESSION = requests.Session()
 SESSION.headers.update({
-    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/152 Safari/537.36 ORIGEN-MARRUECOS-preview/1.0",
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36",
     "Accept-Language": "es-ES,es;q=0.9,en;q=0.6",
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
 })
@@ -31,14 +31,13 @@ DATA_URLS = [
 
 LOGOS = {
     "mercadona": ("https://commons.wikimedia.org/wiki/Special:Redirect/file/Mercadona.svg", "svg"),
-    "carrefour": ("https://commons.wikimedia.org/wiki/Special:Redirect/file/Carrefour_logo.svg", "svg"),
+    "carrefour": ("https://cdn.stocklear.com/storage/45974/1278px-logocarrefour.png", "png"),
     "alcampo": ("https://commons.wikimedia.org/wiki/Special:Redirect/file/Alcampo.png", "png"),
     "lidl": ("https://commons.wikimedia.org/wiki/Special:Redirect/file/Lidl-Logo.svg", "svg"),
     "aldi": ("https://commons.wikimedia.org/wiki/Special:Redirect/file/AldiNord-WorldwideLogo.svg", "svg"),
     "dia": ("https://commons.wikimedia.org/wiki/Special:Redirect/file/Dia_2019.svg", "svg"),
 }
 
-# Alternativas exactas para fichas cuya tienda bloquea la descarga automatizada.
 SOURCE_OVERRIDES = {
     "mercadona-anchoas": "https://radarsuper.com/mercadona/p/filetes-anchoa-aceite-oliva-hacendado-bandeja",
     "mercadona-cherry": "https://radarsuper.com/mercadona/p/tomates-cherry-bandeja",
@@ -46,21 +45,33 @@ SOURCE_OVERRIDES = {
     "carrefour-tapita": "https://radarsuper.com/carrefour/p/tapita-marinera-mediterranea-belmonte-gourmet-300-g-carrefour-carrefour",
 }
 
-# Imágenes comprobadas contra el nombre/formato de la ficha.
+# Imágenes revisadas manualmente contra la ficha. Para El Menú, Carrefour denomina
+# la referencia "62 g", pero su propia ficha declara contenido neto 50 g; usamos la
+# presentación retail actual de 50 g de la misma línea.
 DIRECT_IMAGE_OVERRIDES = {
     "alcampo-belmonte-23": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1d4445a4-4454-417a-bdc9-0ff361ad1dc4/500x500.jpg",
+    "alcampo-belmonte-gourmet": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c93af348-6765-40db-9b08-1d2df9277cd0/500x500.jpg",
     "alcampo-belmonte-gildas": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/fea490be-9285-478e-886e-f84ba35be968/1120x1120.jpg",
     "alcampo-belmonte-tapitas": "https://sgfm.elcorteingles.es/SGFM/dctm/MEDIA03/201912/11/00118285202208____1__600x600.jpg",
     "carrefour-caracol": "https://static.carrefour.es/hd_510x_/img_pim_food/475196_00_1.jpg",
     "carrefour-tapita": "https://sgfm.elcorteingles.es/SGFM/dctm/MEDIA03/201912/11/00118285202208____1__600x600.jpg",
     "carrefour-ramiflor": "https://static.carrefour.es/hd_510x_/img_pim_food/366621_00_1.jpg",
+    "carrefour-elmenu": "https://www.gastronomicspain.com/7385-large_default/anchoas-en-aceite-de-oliva.webp",
     "alcampo-calvo-girasol": "https://pamplona.e-leclerc.es/documents/10180/10815/8410090410412_G.jpg",
     "alcampo-calvo-oliva-baja-sal": "https://static.carrefour.es/hd_510x_/img_pim_food/486926_00_1.jpg",
     "alcampo-calvo-sardinillas-baja-sal": "https://sgfm.elcorteingles.es/SGFM/dctm/MEDIA03/202002/24/00118004700649____1__1200x1200.jpg",
     "alcampo-belmonte-banderillas": "https://sgfm.elcorteingles.es/SGFM/dctm/MEDIA03/201710/04/00118285201861____1__600x600.jpg",
     "alcampo-vanelli-anchoa": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a596a573-6461-4b39-94a4-d85b90fdef8f/500x500.jpg",
     "alcampo-perejil-bio": "https://a0.soysuper.com/e5a724c4048cdc07fa1c6deb31df1ca7.500.0.0.0.wmark.3eb8b449.jpg",
+    "alcampo-eneldo-bio": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/30ffec0d-f013-4b3d-be37-0b26ef34d804/500x500.jpg",
     "aldi-aguacate": "https://archivana.com/pics/09/8c/098c6129854123bb2a1090cd1c07fef9b7686c03.jpg",
+}
+
+# Si la tienda no entrega el HTML de la ficha, estos candidatos son sólo último
+# recurso tras intentar extraer la imagen exacta del buscador SSR.
+FALLBACK_IMAGE_OVERRIDES = {
+    "alcampo-pescadona-pulpo": "https://claire.global/static/media/catalog/products/1822-pata-de-pulpo-cocido-68-patas-congelado-f6195547537b40f68e61baa827c4a4b2-520x520.jpg",
+    "alcampo-estragon-bio": "https://d3nqciqdbtzkc.cloudfront.net/articulos/articulos-105306.jpg",
 }
 
 CANVAS = 1000
@@ -76,7 +87,7 @@ def norm(s):
 
 def polite_wait(url):
     host = urlparse(url).netloc.lower()
-    gap = 2.0 if "compraonline.alcampo.es" in host else 0.35
+    gap = 1.4 if "compraonline.alcampo.es" in host else 0.25
     previous = LAST_REQUEST.get(host, 0)
     remaining = gap - (time.monotonic() - previous)
     if remaining > 0:
@@ -84,22 +95,22 @@ def polite_wait(url):
     LAST_REQUEST[host] = time.monotonic()
 
 
-def fetch(url, *, timeout=25):
+def fetch(url, *, timeout=25, attempts=3):
     last = None
-    for attempt in range(4):
+    for attempt in range(attempts):
         polite_wait(url)
         try:
             r = SESSION.get(url, timeout=timeout, allow_redirects=True)
-            if r.status_code in {403, 429, 500, 502, 503, 504} and attempt < 3:
-                time.sleep(3.5 * (attempt + 1))
+            if r.status_code in {403, 429, 500, 502, 503, 504} and attempt < attempts - 1:
+                time.sleep(2.2 * (attempt + 1))
                 last = requests.HTTPError(f"HTTP {r.status_code}")
                 continue
             r.raise_for_status()
             return r
         except (requests.RequestException, requests.Timeout) as exc:
             last = exc
-            if attempt < 3:
-                time.sleep(2.5 * (attempt + 1))
+            if attempt < attempts - 1:
+                time.sleep(1.8 * (attempt + 1))
     raise last or RuntimeError(f"No se pudo descargar {url}")
 
 
@@ -147,13 +158,83 @@ def meta_images(html, base):
             out.append(urljoin(base, m.group(1).replace("&amp;", "&")))
 
     seen = set()
-    clean = []
-    for u in out:
-        if not u or u.startswith("data:") or u in seen:
+    return [u for u in out if u and not u.startswith("data:") and not (u in seen or seen.add(u))]
+
+
+def extract_object_after_key(text, key):
+    idx = text.find(key)
+    if idx < 0:
+        return None
+    start = text.find('{', idx + len(key))
+    if start < 0:
+        return None
+    depth = 0
+    in_string = False
+    escaped = False
+    for i in range(start, len(text)):
+        c = text[i]
+        if in_string:
+            if escaped:
+                escaped = False
+            elif c == '\\':
+                escaped = True
+            elif c == '"':
+                in_string = False
             continue
-        seen.add(u)
-        clean.append(u)
-    return clean
+        if c == '"':
+            in_string = True
+        elif c == '{':
+            depth += 1
+        elif c == '}':
+            depth -= 1
+            if depth == 0:
+                return text[start:i+1]
+    return None
+
+
+def collect_image_strings(value, out):
+    if isinstance(value, str):
+        if "images-v3" in value and value.startswith("http"):
+            out.append(value.replace('\\u0026', '&'))
+    elif isinstance(value, dict):
+        for v in value.values():
+            collect_image_strings(v, out)
+    elif isinstance(value, list):
+        for v in value:
+            collect_image_strings(v, out)
+
+
+def alcampo_search_candidates(product):
+    if product.get("chain") != "Alcampo":
+        return []
+    m = re.search(r'/([0-9]+)(?:[/?#]|$)', product.get("url", ""))
+    product_id = m.group(1) if m else ""
+    if not product_id:
+        return []
+    query = product.get("product", "").replace('·', ' ')
+    try:
+        html = fetch("https://www.compraonline.alcampo.es/search?q=" + quote_plus(query), timeout=30).text
+        raw = extract_object_after_key(html, '"productEntities"')
+        if not raw:
+            return []
+        entities = json.loads(raw)
+    except Exception as exc:
+        print(f"WARN search Alcampo {product['id']}: {exc}")
+        return []
+
+    matches = []
+    for key, entity in entities.items():
+        if not isinstance(entity, dict):
+            continue
+        rid = str(entity.get("retailerProductId") or entity.get("id") or key)
+        if product_id not in rid and product_id not in str(key):
+            continue
+        collect_image_strings(entity, matches)
+    # Preferimos 1120/500 frente a miniaturas.
+    matches = sorted(set(matches), key=lambda u: ("1120x1120" in u, "500x500" in u, "300x300" in u), reverse=True)
+    if matches:
+        print(f"  SEARCH exact image candidates: {matches[:3]}")
+    return matches
 
 
 def off_candidates(product):
@@ -162,16 +243,11 @@ def off_candidates(product):
     query = f"{brand} {name}".strip()
     if not query:
         return []
-    params = (
-        "search_simple=1&action=process&json=1&page_size=8&"
-        "fields=code,product_name,brands,image_front_url,image_url&search_terms=" + quote_plus(query)
-    )
-    url = "https://world.openfoodfacts.org/cgi/search.pl?" + params
+    url = "https://world.openfoodfacts.org/cgi/search.pl?search_simple=1&action=process&json=1&page_size=8&fields=code,product_name,brands,image_front_url,image_url&search_terms=" + quote_plus(query)
     try:
-        data = fetch(url, timeout=20).json()
+        data = fetch(url, timeout=20, attempts=2).json()
     except Exception:
         return []
-
     words = [w for w in re.findall(r"[a-z0-9]+", norm(name)) if len(w) > 3]
     brand_n = norm(brand)
     scored = []
@@ -195,7 +271,7 @@ def source_candidates(product):
     if url.lower().endswith(".pdf") or "as.com" in host or "coag" in host:
         return []
     try:
-        r = fetch(url)
+        r = fetch(url, attempts=2)
         return meta_images(r.text, r.url)
     except Exception as exc:
         print(f"WARN page {product['id']}: {exc}")
@@ -203,7 +279,7 @@ def source_candidates(product):
 
 
 def image_bytes(url):
-    r = fetch(url, timeout=30)
+    r = fetch(url, timeout=30, attempts=3)
     ct = (r.headers.get("content-type") or "").lower()
     if "svg" in ct or url.lower().split("?")[0].endswith(".svg"):
         return None
@@ -223,10 +299,16 @@ def normalize_product_image(raw, dst):
             im = im.crop(bbox)
         im.thumbnail((MAX_CONTENT, MAX_CONTENT), Image.Resampling.LANCZOS)
         canvas = Image.new("RGBA", (CANVAS, CANVAS), BACKGROUND)
-        x = (CANVAS - im.width) // 2
-        y = (CANVAS - im.height) // 2
-        canvas.alpha_composite(im, (x, y))
+        canvas.alpha_composite(im, ((CANVAS - im.width)//2, (CANVAS - im.height)//2))
         canvas.convert("RGB").save(dst, "WEBP", quality=88, method=6)
+
+
+def try_candidate(url, dst):
+    raw = image_bytes(url)
+    if not raw:
+        return False
+    normalize_product_image(raw, dst)
+    return True
 
 
 def choose_product_image(product):
@@ -234,25 +316,30 @@ def choose_product_image(product):
     if dst.exists() and dst.stat().st_size > 3000:
         return "local-cache"
 
-    candidates = []
     direct = DIRECT_IMAGE_OVERRIDES.get(product["id"])
     if direct:
-        candidates.append(direct)
+        try:
+            if try_candidate(direct, dst):
+                return direct
+        except Exception as exc:
+            print(f"WARN direct {product['id']}: {exc}")
+
+    candidates = alcampo_search_candidates(product)
     candidates += source_candidates(product)
     candidates += off_candidates(product)
+    fallback = FALLBACK_IMAGE_OVERRIDES.get(product["id"])
+    if fallback:
+        candidates.append(fallback)
 
     errors = []
     seen = set()
-    for u in candidates[:18]:
+    for u in candidates[:20]:
         if u in seen:
             continue
         seen.add(u)
         try:
-            raw = image_bytes(u)
-            if not raw:
-                continue
-            normalize_product_image(raw, dst)
-            return u
+            if try_candidate(u, dst):
+                return u
         except Exception as exc:
             errors.append(str(exc))
     if errors:
@@ -262,6 +349,13 @@ def choose_product_image(product):
 
 def sync_logos():
     ok = 0
+    expected = {name: ext for name, (_, ext) in LOGOS.items()}
+    # Borra variantes antiguas del logo si cambia el formato.
+    for name, ext in expected.items():
+        for old_ext in ("svg", "png", "jpg", "webp"):
+            old = LOGO_DIR / f"{name}.{old_ext}"
+            if old_ext != ext and old.exists():
+                old.unlink()
     for name, (url, ext) in LOGOS.items():
         dst = LOGO_DIR / f"{name}.{ext}"
         if dst.exists() and dst.stat().st_size > 300:
@@ -277,7 +371,9 @@ def sync_logos():
                 dst.write_text(txt, encoding="utf-8")
             else:
                 with Image.open(io.BytesIO(r.content)) as im:
-                    ImageOps.exif_transpose(im).convert("RGBA").save(dst, "PNG", optimize=True)
+                    im = ImageOps.exif_transpose(im).convert("RGBA")
+                    im.thumbnail((1200, 800), Image.Resampling.LANCZOS)
+                    im.save(dst, "PNG", optimize=True)
             ok += 1
             print(f"LOGO OK {name}")
         except Exception as exc:
