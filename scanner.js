@@ -239,7 +239,7 @@
     fig.className = 'product-photo';
     fig.dataset.productImage = id;
     const img = document.createElement('img');
-    img.src = `assets/products/${encodeURIComponent(id)}.webp`;
+    img.src = `assets/products/${encodeURIComponent(id)}.webp?v=2`;
     img.alt = product ? `Imagen de ${product}` : 'Imagen del producto';
     img.loading = 'lazy';
     img.decoding = 'async';
