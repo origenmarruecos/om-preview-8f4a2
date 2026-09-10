@@ -212,7 +212,7 @@
 (() => {
   const logoPaths = {
     'Mercadona':'assets/logos/mercadona.svg',
-    'Carrefour':'assets/logos/carrefour.svg',
+    'Carrefour':'assets/logos/carrefour.png',
     'Alcampo':'assets/logos/alcampo.png',
     'Lidl':'assets/logos/lidl.svg',
     'Aldi':'assets/logos/aldi.svg',
