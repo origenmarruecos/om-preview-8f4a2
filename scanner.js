@@ -206,3 +206,95 @@
   input.addEventListener('input',()=>{input.value=clean(input.value);});
   window.addEventListener('pagehide',()=>{if(scanning) stop();});
 })();
+
+// Preproducción: usa los assets locales del repositorio para que las fichas no dependan
+// de hosts externos y para mantener un lienzo de producto uniforme.
+(() => {
+  const logoPaths = {
+    'Mercadona':'assets/logos/mercadona.svg',
+    'Carrefour':'assets/logos/carrefour.svg',
+    'Alcampo':'assets/logos/alcampo.png',
+    'Lidl':'assets/logos/lidl.svg',
+    'Aldi':'assets/logos/aldi.svg',
+    'DIA':'assets/logos/dia.svg'
+  };
+  let activeDetailId = '';
+  let scheduled = false;
+
+  const rowById = id => (Array.isArray(window.data) ? window.data.find(x => x.id === id) : null);
+
+  function localizeLogos(root=document){
+    root.querySelectorAll?.('img[alt^="Logo "]').forEach(img => {
+      const chain = img.alt.slice(5).trim();
+      const src = logoPaths[chain];
+      if (!src || img.dataset.omLocalLogo === '1') return;
+      img.dataset.omLocalLogo = '1';
+      img.src = src;
+      img.removeAttribute('referrerpolicy');
+    });
+  }
+
+  function productFigure(id, product){
+    const fig = document.createElement('div');
+    fig.className = 'product-photo';
+    fig.dataset.productImage = id;
+    const img = document.createElement('img');
+    img.src = `assets/products/${encodeURIComponent(id)}.webp`;
+    img.alt = product ? `Imagen de ${product}` : 'Imagen del producto';
+    img.loading = 'lazy';
+    img.decoding = 'async';
+    img.addEventListener('error', () => fig.remove(), {once:true});
+    fig.appendChild(img);
+    return fig;
+  }
+
+  function enhanceCards(){
+    document.querySelectorAll('.product-card').forEach(card => {
+      const detail = card.querySelector('[data-detail]');
+      const id = detail?.dataset.detail;
+      if (!id || card.querySelector(`.product-photo[data-product-image="${CSS.escape(id)}"]`)) return;
+      const row = rowById(id);
+      const top = card.querySelector('.product-top');
+      if (!top) return;
+      top.insertAdjacentElement('afterend', productFigure(id, row?.product));
+    });
+  }
+
+  function enhanceDetail(){
+    if (!activeDetailId) return;
+    const body = document.getElementById('detailBody');
+    if (!body || body.querySelector('.modal-product-photo')) return;
+    const row = rowById(activeDetailId);
+    if (!row) return;
+    const fig = productFigure(activeDetailId, row.product);
+    fig.classList.add('modal-product-photo');
+    const status = body.querySelector('.status');
+    if (status) status.insertAdjacentElement('afterend', fig);
+    else body.prepend(fig);
+  }
+
+  function runEnhancements(){
+    scheduled = false;
+    localizeLogos();
+    enhanceCards();
+    enhanceDetail();
+  }
+
+  function schedule(){
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(runEnhancements);
+  }
+
+  document.addEventListener('click', e => {
+    const button = e.target.closest?.('[data-detail]');
+    if (!button) return;
+    activeDetailId = button.dataset.detail || '';
+    setTimeout(schedule, 0);
+  }, true);
+
+  const observer = new MutationObserver(schedule);
+  observer.observe(document.body, {childList:true, subtree:true});
+  window.addEventListener('load', schedule);
+  schedule();
+})();
