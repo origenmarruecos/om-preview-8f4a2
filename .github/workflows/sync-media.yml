@@ -1,0 +1,44 @@
+name: Sync local product media
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/sync_media.py'
+      - '.github/workflows/sync-media.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Install media dependencies
+        run: python -m pip install --disable-pip-version-check requests pillow
+
+      - name: Download and normalize media
+        run: python tools/sync_media.py
+
+      - name: Commit generated assets
+        run: |
+          git config user.name "origenmarruecos-media-bot"
+          git config user.email "327055556+origenmarruecos@users.noreply.github.com"
+          git add assets/products assets/logos assets/media-manifest.json
+          if git diff --cached --quiet; then
+            echo "No media changes"
+            exit 0
+          fi
+          git commit -m "Actualizar imágenes y logos locales"
+          git push
