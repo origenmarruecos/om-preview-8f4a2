@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
+<meta name="googlebot" content="noindex,nofollow,noarchive,nosnippet,noimageindex">
+<meta name="theme-color" content="#C1272D">
+<title>ORIGEN MARRUECOS · Prototipo escáner</title>
+<meta name="description" content="Entorno de pruebas no indexable de ORIGEN MARRUECOS.">
+<link rel="icon" href="https://origenmarruecos.github.io/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://origenmarruecos.github.io/styles-1.css">
+<link rel="stylesheet" href="https://origenmarruecos.github.io/styles-2.css">
+<link rel="stylesheet" href="scanner.css">
+<script src="https://unpkg.com/@zxing/browser@0.2.1/umd/zxing-browser.min.js"></script>
+</head>
+<body>
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track">
+    <span>BOICOT ECONÓMICO <b>◆</b> CONSUMO INFORMADO <b>◆</b> ESCANEA EL PRODUCTO <b>◆</b> COMPRUEBA EL ORIGEN <b>◆</b></span>
+    <span>BOICOT ECONÓMICO <b>◆</b> CONSUMO INFORMADO <b>◆</b> ESCANEA EL PRODUCTO <b>◆</b> COMPRUEBA EL ORIGEN <b>◆</b></span>
+  </div>
+</div>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a class="logo" href="#inicio"><span class="logo-mark">★</span> ORIGEN MARRUECOS</a>
+    <div class="nav-links">
+      <a href="#escaner">01 Escáner</a>
+      <a href="#supermercados">02 Supermercados</a>
+      <a href="#productos">03 Productos</a>
+      <a href="https://origenmarruecos.github.io/manifiesto.html">04 Manifiesto</a>
+    </div>
+    <div class="nav-actions">
+      <span class="prototype-pill">PROTOTIPO</span>
+      <span class="cp-active" id="cpActive">CP <b id="cpActiveValue"></b></span>
+      <button class="plain-btn" id="randomBtn">Producto al azar</button>
+      <button class="icon-btn dark" id="savedBtn">★ <span id="savedCountTop">0</span></button>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="inicio">
+  <div class="hero-grid">
+    <div class="hero-copy">
+      <span class="eyebrow">Archivo público · España · actualización 09/2026</span>
+      <h1><span class="stroke">Origen</span><span class="solid">Marruecos</span></h1>
+      <p class="hero-lead">Una herramienta para quien quiera ejercer un <strong>boicot económico informado</strong>: productos vendidos en España con origen, elaboración o envasado documentado en Marruecos.</p>
+      <div class="hero-cta">
+        <a class="cta" href="#escaner">Escanear producto ↓</a>
+        <a class="cta secondary" href="#productos">Consultar archivo</a>
+        <a class="cta secondary" href="https://origenmarruecos.github.io/manifiesto.html">Manifiesto</a>
+      </div>
+      <p class="hero-note">El escáner distingue entre origen documentado, indicios y ausencia de datos. Un prefijo de código de barras no se tratará como prueba de fabricación.</p>
+    </div>
+    <div class="hero-art">
+      <div class="stamp"><div><b id="heroTotal">0</b>fichas<br>documentadas</div></div>
+      <div class="star">★</div>
+      <div class="hero-barcode"></div>
+    </div>
+  </div>
+</header>
+
+<section class="scanner-zone" id="escaner">
+  <div class="scanner-inner">
+    <div class="scanner-copy">
+      <span class="scanner-kicker">01 / Lector de código de barras</span>
+      <h2>Escanea.<br>Comprueba.</h2>
+      <p>Apunta la cámara al EAN del producto. El lector busca primero coincidencias verificadas por ORIGEN MARRUECOS y después consulta Open Food Facts para localizar datos declarados de origen o fabricación.</p>
+      <div class="scanner-rule">
+        <b>Importante</b>
+        <span>El prefijo <strong>611</strong> corresponde a GS1 Marruecos, pero no demuestra que el producto haya sido fabricado allí. Lo tratamos únicamente como indicio.</span>
+      </div>
+    </div>
+
+    <div class="scanner-panel">
+      <div class="scanner-screen" id="scannerScreen">
+        <video id="scannerVideo" muted playsinline></video>
+        <div class="scanner-placeholder" id="scannerPlaceholder">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V4h3M17 4h3v3M20 17v3h-3M7 20H4v-3M7 9h10v6H7z"/></svg>
+          <b>CÁMARA APAGADA</b>
+          <span>Pulsa el botón para empezar a escanear</span>
+        </div>
+        <div class="scan-frame" aria-hidden="true"><i></i></div>
+      </div>
+
+      <div class="scanner-controls">
+        <button class="scanner-primary" id="startScanner" type="button">Activar cámara</button>
+        <button class="scanner-secondary" id="stopScanner" type="button" disabled>Detener</button>
+      </div>
+
+      <form class="barcode-form" id="barcodeForm">
+        <label for="barcodeInput">O introducir código manualmente</label>
+        <div class="barcode-row">
+          <input id="barcodeInput" inputmode="numeric" autocomplete="off" placeholder="Ej. 3017624010701" maxlength="18">
+          <button type="submit">Comprobar</button>
+        </div>
+      </form>
+
+      <div class="scanner-status" id="scannerStatus" aria-live="polite">Preparado para escanear.</div>
+    </div>
+  </div>
+
+  <div class="scanner-result-wrap">
+    <div class="scanner-result empty-result" id="scannerResult">
+      <div class="result-mark">?</div>
+      <div>
+        <span class="result-eyebrow">Resultado del escáner</span>
+        <h3>Escanea un producto</h3>
+        <p>Aquí aparecerá el producto, el código leído y qué evidencia existe sobre su relación con Marruecos.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="local-zone" id="zona">
+  <div class="local-zone-inner">
+    <div class="local-copy">
+      <span class="local-kicker">Tu zona de compra</span>
+      <h2>¿Dónde compras?</h2>
+      <p>Introduce tu código postal para priorizar referencias observadas en tu zona. En fruta y verdura, el origen puede cambiar entre tiendas, semanas, campañas y lotes.</p>
+    </div>
+    <form class="local-form" id="postcodeForm">
+      <div class="local-input-wrap">
+        <label for="postcode">Código postal</label>
+        <input class="local-input" id="postcode" inputmode="numeric" autocomplete="postal-code" maxlength="5" pattern="[0-9]{5}" placeholder="28001" aria-label="Código postal">
+      </div>
+      <button class="local-submit" type="submit">Ver mi zona</button>
+      <div class="local-options">
+        <label class="local-toggle"><input type="checkbox" id="strictLocal">Sólo disponibilidad confirmada en este CP</label>
+        <button class="local-reset" type="button" id="clearPostcode">Quitar ubicación</button>
+      </div>
+      <div class="local-status" id="localStatus"><strong>Sin CP seleccionado.</strong> Se muestran todas las referencias documentadas.</div>
+    </form>
+  </div>
+</section>
+
+<section class="stats">
+  <div class="stats-inner">
+    <div class="stat"><b id="statTotal">0</b><span>Fichas documentadas en el archivo</span></div>
+    <div class="stat"><b id="statBoycott">0</b><span>Productos clasificados para boicot directo</span></div>
+    <div class="stat"><b id="statReview">0</b><span>Casos que requieren revisar lote</span></div>
+    <div class="stat"><b id="statSources">0</b><span>Cadenas con referencias documentadas</span></div>
+  </div>
+</section>
+
+<section class="section" id="supermercados">
+  <div class="section-head">
+    <div><div class="section-kicker">02 / Supermercados bajo lupa</div><h2>Empieza por<br>la tienda.</h2></div>
+    <p class="section-copy">Pulsa una cadena para ver únicamente sus referencias. Los logos sirven como acceso visual rápido; que una cadena tenga pocas fichas aquí no significa que tenga menos producto marroquí, sino que sólo publicamos lo que podemos documentar.</p>
+  </div>
+  <div class="chain-grid" id="chainGrid"></div>
+</section>
+
+<section class="products-zone" id="productos">
+  <div class="section">
+    <div class="section-head">
+      <div><div class="section-kicker">03 / Archivo de productos</div><h2>Consulta.<br>Contrasta.</h2></div>
+      <p class="section-copy">Busca por producto, marca o categoría. Si indicas un CP, cada ficha mostrará si existe una observación local para esa zona; cuando no la haya, aparecerá como “sin dato local”.</p>
+    </div>
+    <div class="toolbelt">
+      <input id="search" type="search" placeholder="Buscar producto, marca, evidencia…">
+      <select id="chain"><option value="">Todos los supermercados</option></select>
+      <select id="status">
+        <option value="">Todos los estados</option><option value="confirmed">Origen confirmado</option><option value="processed">Elaborado / envasado</option><option value="variable">Origen variable</option><option value="conflict">Datos contradictorios</option><option value="watch">Vigilancia estacional</option>
+      </select>
+      <select id="category"><option value="">Todas las categorías</option></select>
+      <div class="view-buttons"><button id="gridView" class="active" title="Vista de fichas">▦</button><button id="compactView" title="Vista compacta">☷</button></div>
+    </div>
+    <div class="quick-row">
+      <button class="quick active" data-quick="">Todo el archivo</button><button class="quick" data-quick="boycott">Boicot directo</button><button class="quick" data-quick="fresh">🍓 Fruta y verdura</button><button class="quick" data-quick="review">Revisar lote</button><button class="quick" data-quick="saved">★ Mis guardados</button><button class="quick" id="clearFilters">Limpiar filtros</button>
+    </div>
+    <div class="product-grid" id="productGrid"></div>
+  </div>
+</section>
+
+<section class="section" id="criterio">
+  <div class="section-head">
+    <div><div class="section-kicker">04 / Criterio editorial</div><h2>Boicot sí.<br>Bulología no.</h2></div>
+    <p class="section-copy">Para que una campaña de consumo sea útil tiene que distinguir entre un dato comprobable y una captura viral. Aquí la clasificación es deliberadamente explícita.</p>
+  </div>
+  <div class="manifesto">
+    <div class="manifesto-left"><div class="big-no">01</div><h3>Qué cuenta como “origen Marruecos” aquí</h3><p>A efectos de esta web, se incluye tanto el producto cuyo país de origen/procedencia es Marruecos como el que ha sido elaborado o envasado allí.</p></div>
+    <div class="manifesto-right"><h3>Jerarquía de evidencia</h3><ol><li>Ficha oficial del supermercado con país de origen/procedencia.</li><li>Etiqueta física legible del producto y lote.</li><li>Declaración atribuible de la cadena o del fabricante.</li><li>Fuente secundaria fiable que reproduzca una declaración comprobable.</li></ol><button class="plain-btn" id="copyTemplate">Copiar plantilla para documentar un lote</button></div>
+  </div>
+</section>
+
+<footer class="footer"><div class="footer-inner"><div><div class="footer-brand">ORIGEN<br>MARRUECOS</div><p>Herramienta informativa para decisiones voluntarias de consumo y boicot económico. Las cadenas de suministro cambian: revisa el lote y la fuente cuando sea necesario.</p></div></div></footer>
+
+<div class="saved-dock" id="savedDock"><b><span id="savedCountDock">0</span> productos guardados</b><button id="openSavedDock">Ver lista</button></div>
+<dialog id="detailDialog"><div class="modal-head"><strong>Ficha documentada</strong><button class="modal-close" data-close>×</button></div><div class="modal-body" id="detailBody"></div></dialog>
+<dialog id="savedDialog"><div class="modal-head"><strong>Mi lista de compra</strong><button class="modal-close" data-close-saved>×</button></div><div class="modal-body" id="savedBody"></div></dialog>
+<div class="toast" id="toast"></div>
+
+<script src="https://origenmarruecos.github.io/data-1.js"></script>
+<script src="https://origenmarruecos.github.io/data-2.js"></script>
+<script src="https://origenmarruecos.github.io/data-3.js"></script>
+<script src="verified-barcodes.js"></script>
+<script src="https://origenmarruecos.github.io/app.js"></script>
+<script src="scanner.js"></script>
+</body>
+</html>
